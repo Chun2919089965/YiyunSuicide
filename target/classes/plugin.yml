@@ -1,0 +1,27 @@
+name: YiyunSuicide
+version: '1.0.0'
+main: com.github.playersuicide.SuicidePlugin
+api-version: '1.8'
+description: 逸云庄工作室 - 轻量级玩家自杀插件
+author: CHL_chun
+
+commands:
+  killme:
+    description: 玩家自杀命令
+    usage: /<command>
+    permission: yiyunsuicide.killme
+    aliases: [suicide]
+
+permissions:
+  yiyunsuicide.killme:
+    description: 允许使用自杀命令
+    default: true
+  yiyunsuicide.bypass:
+    description: 绕过冷却时间
+    default: op
+  yiyunsuicide.bypass.world:
+    description: 绕过世界限制
+    default: op
+  yiyunsuicide.reload:
+    description: 重新加载配置文件
+    default: op
