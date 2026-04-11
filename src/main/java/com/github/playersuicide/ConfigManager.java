@@ -1,28 +1,49 @@
 package com.github.playersuicide;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ConfigManager {
 
     @NotNull
     private final JavaPlugin plugin;
 
-    @Nullable
+    @NotNull
+    private final File configFile;
+
+    @NotNull
     private FileConfiguration config;
 
     @NotNull
-    private final File configFile;
+    private Set<String> worldBlacklist = Collections.emptySet();
+
+    @NotNull
+    private Set<String> worldWhitelist = Collections.emptySet();
+
+    private boolean worldBlacklistEnabled;
+    private boolean worldWhitelistEnabled;
+    private boolean cooldownEnabled;
+    private long cooldownSeconds;
+    private boolean metricsEnabled;
+
+    @NotNull
+    private String broadcastMessage;
+    @NotNull
+    private String worldDeniedMessage;
+    @NotNull
+    private String cooldownMessage;
 
     public ConfigManager(@NotNull JavaPlugin plugin) {
         this.plugin = plugin;
@@ -49,71 +70,80 @@ public class ConfigManager {
                 config.options().copyDefaults(true);
             }
         } catch (IOException e) {
+            plugin.getLogger().warning("加载默认配置时出错: " + e.getMessage());
         }
+
+        loadCachedValues();
+    }
+
+    private void loadCachedValues() {
+        worldBlacklistEnabled = config.getBoolean("enable-blacklist", true);
+        worldWhitelistEnabled = config.getBoolean("enable-whitelist", false);
+        cooldownEnabled = config.getBoolean("enable-cooldown", true);
+        cooldownSeconds = Math.max(0, config.getLong("cooldown-seconds", 10));
+        metricsEnabled = config.getBoolean("enable-metrics", true);
+
+        worldBlacklist = new HashSet<>(config.getStringList("world-blacklist"));
+        worldWhitelist = new HashSet<>(config.getStringList("world-whitelist"));
+
+        broadcastMessage = ChatColor.translateAlternateColorCodes('&', config.getString("broadcast-message",
+            "&c&l☠ &7 玩家 &e&l{player} &7 选择了结束自己的生命 &c&l☠"));
+        worldDeniedMessage = ChatColor.translateAlternateColorCodes('&', config.getString("world-denied-message",
+            "&c 此世界不允许使用自杀功能！"));
+        cooldownMessage = ChatColor.translateAlternateColorCodes('&', config.getString("cooldown-message",
+            "&c 自杀冷却中，请等待 &e{seconds} &c 秒"));
     }
 
     public void saveConfig() {
-        if (config != null) {
-            try {
-                config.save(configFile);
-            } catch (IOException e) {
-            }
+        try {
+            config.save(configFile);
+        } catch (IOException e) {
+            plugin.getLogger().warning("保存配置文件时出错: " + e.getMessage());
         }
     }
 
     @NotNull
-    public FileConfiguration getConfig() {
-        if (config == null) {
-            reloadConfig();
-        }
-        return config;
-    }
-
-    @NotNull
-    public List<String> getWorldBlacklist() {
-        return getConfig().getStringList("world-blacklist");
+    public Set<String> getWorldBlacklist() {
+        return worldBlacklist;
     }
 
     public boolean isWorldBlacklistEnabled() {
-        return getConfig().getBoolean("enable-blacklist", true);
+        return worldBlacklistEnabled;
     }
 
     @NotNull
-    public List<String> getWorldWhitelist() {
-        return getConfig().getStringList("world-whitelist");
+    public Set<String> getWorldWhitelist() {
+        return worldWhitelist;
     }
 
     public boolean isWorldWhitelistEnabled() {
-        return getConfig().getBoolean("enable-whitelist", false);
+        return worldWhitelistEnabled;
     }
 
     public boolean isCooldownEnabled() {
-        return getConfig().getBoolean("enable-cooldown", true);
+        return cooldownEnabled;
     }
 
     public long getCooldownSeconds() {
-        return Math.max(0, getConfig().getLong("cooldown-seconds", 10));
+        return cooldownSeconds;
     }
 
     @NotNull
     public String getBroadcastMessage() {
-        return getConfig().getString("broadcast-message",
-            "&c&l☠ &7 玩家 &e&l{player} &7 选择了结束自己的生命 &c&l☠");
+        return broadcastMessage;
     }
 
     @NotNull
     public String getWorldDeniedMessage() {
-        return getConfig().getString("world-denied-message",
-            "&c 此世界不允许使用自杀功能！");
+        return worldDeniedMessage;
     }
 
     @NotNull
     public String getCooldownMessage() {
-        return getConfig().getString("cooldown-message",
-            "&c 自杀冷却中，请等待 &e{seconds} &c 秒");
+        return cooldownMessage;
     }
 
     public boolean isMetricsEnabled() {
-        return getConfig().getBoolean("enable-metrics", true);
+        return metricsEnabled;
     }
 }
