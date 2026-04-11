@@ -1,0 +1,32 @@
+# YiyunSuicide 配置文件
+# 作者：CHL_chun
+# 归属：逸云庄工作室
+
+# 世界黑名单（优先级高于白名单）
+# 在黑名单中的世界无法使用自杀功能
+enable-blacklist: true
+world-blacklist:
+  - "world_nether"
+  - "world_the_end"
+  - "creative_world"
+
+# 世界白名单
+# 启用后，只有在白名单中的世界才能使用自杀功能
+enable-whitelist: false
+world-whitelist:
+  - "world"
+  - "survival_world"
+
+# 冷却设置
+enable-cooldown: true
+cooldown-seconds: 10
+
+# 消息设置
+# 可用占位符：{player} - 玩家名称
+broadcast-message: "§c§l☠ §7 玩家 §e§l{player} §7 选择了结束自己的生命 §c§l☠"
+world-denied-message: "§c 此世界不允许使用自杀功能！"
+cooldown-message: "§c 自杀冷却中，请等待 §e{seconds} §c 秒"
+
+# bStats 统计设置
+# 启用后会自动收集匿名统计数据，帮助改进插件
+enable-metrics: true
