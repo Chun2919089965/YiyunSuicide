@@ -14,6 +14,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,9 +28,6 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
     @NotNull
     private final ConfigManager configManager;
 
-    private static final String COLOR_CHAR = "&";
-    private static final String ALT_COLOR_CHAR = "§";
-
     public SuicideCommand(@NotNull ConfigManager configManager) {
         this.configManager = configManager;
     }
@@ -37,30 +35,21 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if (!(sender instanceof Player)) {
-            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-                if (!sender.hasPermission("yiyunsuicide.reload")) {
-                    sender.sendMessage("§c你没有权限执行此命令！");
-                    return true;
-                }
-                configManager.reloadConfig();
-                sender.sendMessage("§a§l✓ 配置文件已重新加载！");
+        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("yiyunsuicide.reload")) {
+                sender.sendMessage("§c你没有权限执行此命令！");
                 return true;
             }
+            configManager.reloadConfig();
+            sender.sendMessage("§a§l✓ 配置文件已重新加载！");
+            return true;
+        }
+
+        if (!(sender instanceof Player)) {
             return true;
         }
 
         Player player = (Player) sender;
-
-        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            if (!player.hasPermission("yiyunsuicide.reload")) {
-                player.sendMessage("§c你没有权限执行此命令！");
-                return true;
-            }
-            configManager.reloadConfig();
-            player.sendMessage("§a§l✓ 配置文件已重新加载！");
-            return true;
-        }
 
         if (!player.hasPermission("yiyunsuicide.killme")) {
             player.sendMessage("§c你没有权限使用此命令！");
@@ -68,14 +57,12 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
         }
 
         if (isWorldDenied(player.getWorld().getName())) {
-            sendColoredMessage(player, configManager.getWorldDeniedMessage());
+            player.sendMessage(configManager.getWorldDeniedMessage());
             return true;
         }
 
-        if (configManager.isCooldownEnabled()) {
-            if (!checkCooldown(player)) {
-                return true;
-            }
+        if (configManager.isCooldownEnabled() && !checkCooldown(player)) {
+            return true;
         }
 
         executeSuicide(player);
@@ -84,8 +71,7 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
 
     private void executeSuicide(@NotNull Player player) {
         player.setHealth(0);
-        String broadcastMsg = configManager.getBroadcastMessage();
-        String formattedMsg = formatMessage(broadcastMsg, player.getName());
+        String formattedMsg = configManager.getBroadcastMessage().replace("{player}", player.getName());
         Bukkit.broadcastMessage(formattedMsg);
     }
 
@@ -95,15 +81,12 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
 
         Long lastUsage = cooldownMap.get(playerId);
         if (lastUsage != null) {
-            long timePassed = currentTime - lastUsage;
-            long cooldownMillis = configManager.getCooldownSeconds() * 1000L;
-            long remaining = cooldownMillis - timePassed;
+            long remaining = configManager.getCooldownSeconds() * 1000L - (currentTime - lastUsage);
 
             if (remaining > 0) {
                 long seconds = remaining / 1000;
-                String cooldownMsg = configManager.getCooldownMessage();
-                String formattedMsg = cooldownMsg.replace("{seconds}", String.valueOf(seconds));
-                sendColoredMessage(player, formattedMsg);
+                String formattedMsg = configManager.getCooldownMessage().replace("{seconds}", String.valueOf(seconds));
+                player.sendMessage(formattedMsg);
                 return false;
             }
         }
@@ -113,46 +96,30 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private boolean isWorldDenied(@NotNull String worldName) {
-        if (configManager.isWorldBlacklistEnabled()) {
-            if (configManager.getWorldBlacklist().contains(worldName)) {
-                return true;
-            }
+        if (configManager.isWorldBlacklistEnabled() && configManager.getWorldBlacklist().contains(worldName)) {
+            return true;
         }
 
-        if (configManager.isWorldWhitelistEnabled()) {
-            if (!configManager.getWorldWhitelist().contains(worldName)) {
-                return true;
-            }
+        if (configManager.isWorldWhitelistEnabled() && !configManager.getWorldWhitelist().contains(worldName)) {
+            return true;
         }
 
         return false;
-    }
-
-    private void sendColoredMessage(@NotNull Player player, @NotNull String message) {
-        player.sendMessage(message.replace(COLOR_CHAR, ALT_COLOR_CHAR));
-    }
-
-    @NotNull
-    private String formatMessage(@NotNull String message, @NotNull String playerName) {
-        return message.replace("{player}", playerName).replace(COLOR_CHAR, ALT_COLOR_CHAR);
     }
 
     @Nullable
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                       @NotNull String alias, @NotNull String[] args) {
-        if (args.length == 1) {
-            if (sender.hasPermission("yiyunsuicide.reload")) {
-                return java.util.Collections.singletonList("reload");
-            }
+        if (args.length == 1 && sender.hasPermission("yiyunsuicide.reload")) {
+            return Collections.singletonList("reload");
         }
         return null;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(@NotNull PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        if (cooldownMap.containsKey(player.getUniqueId())) {
+        if (cooldownMap.containsKey(event.getEntity().getUniqueId())) {
             event.setDeathMessage(null);
         }
     }
