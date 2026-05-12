@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,6 +25,9 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
 
     @NotNull
     private final Map<UUID, Long> cooldownMap = new ConcurrentHashMap<>();
+
+    @NotNull
+    private final Set<UUID> suicideFlags = ConcurrentHashMap.newKeySet();
 
     @NotNull
     private final ConfigManager configManager;
@@ -37,7 +41,7 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
                              @NotNull String label, @NotNull String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
             if (!sender.hasPermission("yiyunsuicide.reload")) {
-                sender.sendMessage("§c你没有权限执行此命令！");
+                sender.sendMessage(configManager.getNoPermissionReloadMessage());
                 return true;
             }
             configManager.reloadConfig();
@@ -46,22 +50,23 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
         }
 
         if (!(sender instanceof Player)) {
+            sender.sendMessage(configManager.getPlayerOnlyMessage());
             return true;
         }
 
         Player player = (Player) sender;
 
         if (!player.hasPermission("yiyunsuicide.killme")) {
-            player.sendMessage("§c你没有权限使用此命令！");
+            player.sendMessage(configManager.getNoPermissionMessage());
             return true;
         }
 
-        if (isWorldDenied(player.getWorld().getName())) {
+        if (!player.hasPermission("yiyunsuicide.bypass.world") && isWorldDenied(player.getWorld().getName())) {
             player.sendMessage(configManager.getWorldDeniedMessage());
             return true;
         }
 
-        if (configManager.isCooldownEnabled() && !checkCooldown(player)) {
+        if (!player.hasPermission("yiyunsuicide.bypass") && configManager.isCooldownEnabled() && !checkCooldown(player)) {
             return true;
         }
 
@@ -70,6 +75,7 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private void executeSuicide(@NotNull Player player) {
+        suicideFlags.add(player.getUniqueId());
         player.setHealth(0);
         String formattedMsg = configManager.getBroadcastMessage().replace("{player}", player.getName());
         Bukkit.broadcastMessage(formattedMsg);
@@ -84,7 +90,7 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
             long remaining = configManager.getCooldownSeconds() * 1000L - (currentTime - lastUsage);
 
             if (remaining > 0) {
-                long seconds = remaining / 1000;
+                long seconds = (remaining + 999) / 1000;
                 String formattedMsg = configManager.getCooldownMessage().replace("{seconds}", String.valueOf(seconds));
                 player.sendMessage(formattedMsg);
                 return false;
@@ -119,7 +125,7 @@ public class SuicideCommand implements CommandExecutor, TabCompleter, Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(@NotNull PlayerDeathEvent event) {
-        if (cooldownMap.containsKey(event.getEntity().getUniqueId())) {
+        if (suicideFlags.remove(event.getEntity().getUniqueId())) {
             event.setDeathMessage(null);
         }
     }
