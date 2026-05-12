@@ -22,10 +22,13 @@ enable-cooldown: true
 cooldown-seconds: 10
 
 # 消息设置
-# 可用占位符：{player} - 玩家名称
+# 可用占位符：{player} - 玩家名称，{seconds} - 剩余秒数
 broadcast-message: "§c§l☠ §7 玩家 §e§l{player} §7 选择了结束自己的生命 §c§l☠"
 world-denied-message: "§c 此世界不允许使用自杀功能！"
 cooldown-message: "§c 自杀冷却中，请等待 §e{seconds} §c 秒"
+no-permission-message: "§c 你没有权限使用此命令！"
+no-permission-reload-message: "§c 你没有权限执行此命令！"
+player-only-message: "§c 此命令只能由玩家执行！"
 
 # bStats 统计设置
 # 启用后会自动收集匿名统计数据，帮助改进插件
