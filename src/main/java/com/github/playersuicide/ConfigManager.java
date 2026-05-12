@@ -27,6 +27,9 @@ public class ConfigManager {
     private FileConfiguration config;
 
     @NotNull
+    private YamlConfiguration defaultConfig;
+
+    @NotNull
     private Set<String> worldBlacklist = Collections.emptySet();
 
     @NotNull
@@ -44,11 +47,33 @@ public class ConfigManager {
     private String worldDeniedMessage;
     @NotNull
     private String cooldownMessage;
+    @NotNull
+    private String noPermissionMessage;
+    @NotNull
+    private String noPermissionReloadMessage;
+    @NotNull
+    private String playerOnlyMessage;
 
     public ConfigManager(@NotNull JavaPlugin plugin) {
         this.plugin = plugin;
         this.configFile = new File(plugin.getDataFolder(), "config.yml");
+        loadDefaultConfig();
         initializeConfig();
+    }
+
+    private void loadDefaultConfig() {
+        try (InputStream stream = plugin.getResource("config.yml")) {
+            if (stream != null) {
+                defaultConfig = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)
+                );
+            } else {
+                defaultConfig = new YamlConfiguration();
+            }
+        } catch (IOException e) {
+            plugin.getLogger().warning("加载默认配置时出错: " + e.getMessage());
+            defaultConfig = new YamlConfiguration();
+        }
     }
 
     private void initializeConfig() {
@@ -60,19 +85,8 @@ public class ConfigManager {
 
     public void reloadConfig() {
         config = YamlConfiguration.loadConfiguration(configFile);
-
-        try (InputStream defConfigStream = plugin.getResource("config.yml")) {
-            if (defConfigStream != null) {
-                YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(
-                    new InputStreamReader(defConfigStream, StandardCharsets.UTF_8)
-                );
-                config.setDefaults(defConfig);
-                config.options().copyDefaults(true);
-            }
-        } catch (IOException e) {
-            plugin.getLogger().warning("加载默认配置时出错: " + e.getMessage());
-        }
-
+        config.setDefaults(defaultConfig);
+        config.options().copyDefaults(true);
         loadCachedValues();
     }
 
@@ -92,6 +106,12 @@ public class ConfigManager {
             "&c 此世界不允许使用自杀功能！"));
         cooldownMessage = ChatColor.translateAlternateColorCodes('&', config.getString("cooldown-message",
             "&c 自杀冷却中，请等待 &e{seconds} &c 秒"));
+        noPermissionMessage = ChatColor.translateAlternateColorCodes('&', config.getString("no-permission-message",
+            "&c 你没有权限使用此命令！"));
+        noPermissionReloadMessage = ChatColor.translateAlternateColorCodes('&', config.getString("no-permission-reload-message",
+            "&c 你没有权限执行此命令！"));
+        playerOnlyMessage = ChatColor.translateAlternateColorCodes('&', config.getString("player-only-message",
+            "&c 此命令只能由玩家执行！"));
     }
 
     public void saveConfig() {
@@ -141,6 +161,21 @@ public class ConfigManager {
     @NotNull
     public String getCooldownMessage() {
         return cooldownMessage;
+    }
+
+    @NotNull
+    public String getNoPermissionMessage() {
+        return noPermissionMessage;
+    }
+
+    @NotNull
+    public String getNoPermissionReloadMessage() {
+        return noPermissionReloadMessage;
+    }
+
+    @NotNull
+    public String getPlayerOnlyMessage() {
+        return playerOnlyMessage;
     }
 
     public boolean isMetricsEnabled() {
