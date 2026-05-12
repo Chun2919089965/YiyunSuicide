@@ -20,15 +20,13 @@ public class SuicidePlugin extends JavaPlugin {
         // 注册 bStats 统计
         if (configManager.isMetricsEnabled()) {
             int pluginId = 29976;
-            Metrics metrics = new Metrics(this, pluginId);
+            new Metrics(this, pluginId);
         }
     }
 
     @Override
     public void onDisable() {
-        if (configManager != null) {
-            configManager.saveConfig();
-        }
+        configManager.saveConfig();
     }
 
     @NotNull
