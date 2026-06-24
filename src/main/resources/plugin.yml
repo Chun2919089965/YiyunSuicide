@@ -4,6 +4,7 @@ main: com.github.playersuicide.SuicidePlugin
 api-version: '1.8'
 description: 逸云庄工作室 - 轻量级玩家自杀插件
 author: CHL_chun
+folia-supported: true
 
 commands:
   killme:
